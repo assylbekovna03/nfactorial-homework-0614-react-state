@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "./App.css";
 
@@ -18,29 +18,33 @@ const buttons = [
   },
 ];
 
-const toDoItems = [
-  {
-    key: uuidv4(),
-    label: "Have fun",
-  },
-  {
-    key: uuidv4(),
-    label: "Spread Empathy",
-  },
-  {
-    key: uuidv4(),
-    label: "Generate Value",
-  },
-];
+const getItem = () => {
+  let list = localStorage.getItem("key");
 
+  if (list) {
+    return JSON.parse(localStorage.getItem("key"));
+  } else {
+    return [];
+  }
+};
 // helpful links:
 // useState crash => https://blog.logrocket.com/a-guide-to-usestate-in-react-ecb9952e406c/
 function App() {
   const [itemToAdd, setItemToAdd] = useState("");
   //arrow declaration => expensive computation ex: API calls
-  const [items, setItems] = useState(() => toDoItems);
+  const [items, setItems] = useState(getItem());
 
   const [filterType, setFilterType] = useState("");
+
+  const ChangeColor = ({ key }) => {
+    setItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.key === key) {
+          return { ...item, warning: !item.warning };
+        } else return item;
+      })
+    );
+  };
 
   const handleChangeItem = (event) => {
     setItemToAdd(event.target.value);
@@ -53,14 +57,23 @@ function App() {
     // setItems(oldItems);
 
     // not mutating !CORRECT!
+
     setItems((prevItems) => [
       { label: itemToAdd, key: uuidv4() },
       ...prevItems,
     ]);
 
     setItemToAdd("");
+    localStorage.setItem("key", JSON.stringify(itemToAdd));
+    localStorage.getItem("key");
   };
 
+  useEffect(() => {
+    localStorage.setItem("key", JSON.stringify(items));
+  }, [items]);
+  const DeleteItem = ({ key }) => {
+    setItems((prevItems) => prevItems.filter((item) => item.key !== key));
+  };
   const handleItemDone = ({ key }) => {
     //first way
     // const itemIndex = items.findIndex((item) => item.key === key);
@@ -143,7 +156,9 @@ function App() {
             <li key={item.key} className="list-group-item">
               <span className={`todo-list-item${item.done ? " done" : ""}`}>
                 <span
-                  className="todo-list-item-label"
+                  className={`todo-list-item-label${
+                    item.warning ? " text-warning" : ""
+                  }`}
                   onClick={() => handleItemDone(item)}
                 >
                   {item.label}
@@ -152,6 +167,7 @@ function App() {
                 <button
                   type="button"
                   className="btn btn-outline-success btn-sm float-right"
+                  onClick={() => ChangeColor(item)}
                 >
                   <i className="fa fa-exclamation" />
                 </button>
@@ -159,6 +175,7 @@ function App() {
                 <button
                   type="button"
                   className="btn btn-outline-danger btn-sm float-right"
+                  onClick={() => DeleteItem(item)}
                 >
                   <i className="fa fa-trash-o" />
                 </button>
